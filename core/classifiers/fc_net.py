@@ -101,9 +101,6 @@ class FullyConnectedNet(object):
   
   where batch normalization and dropout are optional, and the {...} block is
   repeated L - 1 times.
-  
-  Similar to the TwoLayerNet above, learnable parameters are stored in the
-  self.params dictionary and will be learned using the Solver class.
   """
 
   def __init__(self, hidden_dims, input_dim=3*32*32, num_classes=10,
@@ -148,7 +145,30 @@ class FullyConnectedNet(object):
     # beta2, etc. Scale parameters should be initialized to one and shift      #
     # parameters should be initialized to zero.                                #
     ############################################################################
-    pass
+
+    # first hidden layer
+    self.params['W1'] = np.random.normal(0, weight_scale, (input_dim, hidden_dims[0]))
+    self.params['b1'] = np.zeros(hidden_dims[0])
+    self.params['gamma1'] = np.ones(hidden_dims[0])
+    self.params['beta1'] = np.zeros(hidden_dims[0])
+
+    # remaining hidden layers
+    for i in range(2, len(hidden_dims) + 1):
+      wname = 'W' + str(i)
+      bname = 'b' + str(i)
+      gname = 'gamma' + str(i)
+      bename = 'beta' + str(i)
+      self.params[wname] = np.random.normal(0, weight_scale, (hidden_dims[i - 2], hidden_dims[i - 1]))
+      self.params[bname] = np.zeros(hidden_dims[i - 1])
+      self.params[gname] = np.ones(hidden_dims[i - 1])
+      self.params[bename] = np.zeros(hidden_dims[i - 1])
+
+    # remaining layers
+    wname = 'W' + str(len(hidden_dims) + 1)
+    bname = 'b' + str(len(hidden_dims) + 1)
+    self.params[wname] = np.random.normal(0, weight_scale, (hidden_dims[len(hidden_dims) - 1], num_classes))
+    self.params[bname] = np.zeros(num_classes)
+
     ############################################################################
     #                             END OF YOUR CODE                             #
     ############################################################################
@@ -173,6 +193,7 @@ class FullyConnectedNet(object):
     
     # Cast all parameters to the correct datatype
     for k, v in self.params.iteritems():
+      print k, v.shape
       self.params[k] = v.astype(dtype)
 
 
@@ -206,7 +227,15 @@ class FullyConnectedNet(object):
     # self.bn_params[1] to the forward pass for the second batch normalization #
     # layer, etc.                                                              #
     ############################################################################
-    pass
+    
+    outputmap = {}
+    outputmap['aout1'], outputmap['acache1'] = affine_forward(X, self.params['W1'], self.params['b1'])
+    outputmap['bout1'], outputmap['bcache1'] = affine_forward(X, self.params['W1'], self.params['b1'])
+    outputmap['rout1'], outputmap['rcache1'] = affine_forward(X, self.params['W1'], self.params['b1'])
+    
+    for i in range(2, len(hidden_dims) + 1):
+
+
     ############################################################################
     #                             END OF YOUR CODE                             #
     ############################################################################

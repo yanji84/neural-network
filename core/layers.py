@@ -143,7 +143,12 @@ def batchnorm_forward(x, gamma, beta, bn_param):
     # the momentum variable to update the running mean and running variance,    #
     # storing your result in the running_mean and running_var variables.        #
     #############################################################################
-    pass
+    m = np.mean(x, axis=0, keepdims=True)
+    std = np.std(x, axis=0, keepdims=True)
+    out = gamma * (x - m) / std + beta
+
+    running_mean = momentum * running_mean + (1 - momentum) * m
+    running_var = momentum * running_var + (1 - momentum) * std
     #############################################################################
     #                             END OF YOUR CODE                              #
     #############################################################################
@@ -154,7 +159,7 @@ def batchnorm_forward(x, gamma, beta, bn_param):
     # and shift the normalized data using gamma and beta. Store the result in   #
     # the out variable.                                                         #
     #############################################################################
-    pass
+    out = gamma * (x - running_mean) / running_var + beta
     #############################################################################
     #                             END OF YOUR CODE                              #
     #############################################################################
@@ -164,7 +169,7 @@ def batchnorm_forward(x, gamma, beta, bn_param):
   # Store the updated running means back into bn_param
   bn_param['running_mean'] = running_mean
   bn_param['running_var'] = running_var
-
+  cache = ((x - m) / std, gamma / std)
   return out, cache
 
 
@@ -190,7 +195,9 @@ def batchnorm_backward(dout, cache):
   # TODO: Implement the backward pass for batch normalization. Store the      #
   # results in the dx, dgamma, and dbeta variables.                           #
   #############################################################################
-  pass
+  dx = dout * cache[1]
+  dbeta = dout
+  dgamma = np.sum(dout * cache[0], axis=0)
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
