@@ -147,7 +147,10 @@ class FullyConnectedNet(object):
     ############################################################################
 
     # first hidden layer
-    self.params['W1'] = np.random.normal(0, weight_scale, (input_dim, hidden_dims[0]))
+    self.params['W1'] = np.random.normal(
+      0,
+      weight_scale,
+      (input_dim,hidden_dims[0]))
     self.params['b1'] = np.zeros(hidden_dims[0])
     self.params['gamma1'] = np.ones(hidden_dims[0])
     self.params['beta1'] = np.zeros(hidden_dims[0])
@@ -158,7 +161,10 @@ class FullyConnectedNet(object):
       bname = 'b' + str(i)
       gname = 'gamma' + str(i)
       bename = 'beta' + str(i)
-      self.params[wname] = np.random.normal(0, weight_scale, (hidden_dims[i - 2], hidden_dims[i - 1]))
+      self.params[wname] = np.random.normal(
+        0,
+        weight_scale,
+        (hidden_dims[i - 2], hidden_dims[i - 1]))
       self.params[bname] = np.zeros(hidden_dims[i - 1])
       self.params[gname] = np.ones(hidden_dims[i - 1])
       self.params[bename] = np.zeros(hidden_dims[i - 1])
@@ -166,7 +172,10 @@ class FullyConnectedNet(object):
     # remaining layers
     wname = 'W' + str(len(hidden_dims) + 1)
     bname = 'b' + str(len(hidden_dims) + 1)
-    self.params[wname] = np.random.normal(0, weight_scale, (hidden_dims[len(hidden_dims) - 1], num_classes))
+    self.params[wname] = np.random.normal(
+      0,
+      weight_scale,
+      (hidden_dims[len(hidden_dims) - 1],num_classes))
     self.params[bname] = np.zeros(num_classes)
 
     ############################################################################
@@ -193,7 +202,6 @@ class FullyConnectedNet(object):
     
     # Cast all parameters to the correct datatype
     for k, v in self.params.iteritems():
-      print k, v.shape
       self.params[k] = v.astype(dtype)
 
 
@@ -228,13 +236,35 @@ class FullyConnectedNet(object):
     # layer, etc.                                                              #
     ############################################################################
     
-    outputmap = {}
-    outputmap['aout1'], outputmap['acache1'] = affine_forward(X, self.params['W1'], self.params['b1'])
-    outputmap['bout1'], outputmap['bcache1'] = affine_forward(X, self.params['W1'], self.params['b1'])
-    outputmap['rout1'], outputmap['rcache1'] = affine_forward(X, self.params['W1'], self.params['b1'])
-    
-    for i in range(2, len(hidden_dims) + 1):
+    cachemap = {}
+    regloss = 0
+    nextlayerinput = X
 
+    # first and hidden layers
+    for i in range(1, self.num_layers):
+      nextlayerinput, cachemap['acache'+str(i)] = affine_forward(
+        nextlayerinput,
+        self.params['W'+str(i)],
+        self.params['b'+str(i)])
+      regloss += 0.5 * self.reg * np.sum(self.params['W'+str(i)] ** 2)
+      if self.use_batchnorm:
+        nextlayerinput, cachemap['bcache'+str(i)] = batchnorm_forward(
+          nextlayerinput,
+          self.params['gamma'+str(i)],
+          self.params['beta'+str(i)],
+          bn_param[i-1])
+      nextlayerinput, cachemap['rcache'+str(i)] = relu_forward(nextlayerinput)
+      if self.use_dropout:
+        nextlayerinput, cachemap['dcache'+str(i)] = dropout_forward(
+            nextlayerinput,
+            self.dropout_param)
+
+    # last layer
+    scores, cachemap['acache'+str(self.num_layers)] = affine_forward(
+      nextlayerinput,
+      self.params['W'+str(self.num_layers)],
+      self.params['b'+str(self.num_layers)])
+    regloss += 0.5*self.reg * np.sum(self.params['W'+str(self.num_layers)]**2)
 
     ############################################################################
     #                             END OF YOUR CODE                             #
@@ -244,7 +274,9 @@ class FullyConnectedNet(object):
     if mode == 'test':
       return scores
 
-    loss, grads = 0.0, {}
+    grads = {}
+    loss, nextdout = softmax_loss(scores, y)
+    loss += regloss
     ############################################################################
     # TODO: Implement the backward pass for the fully-connected net. Store the #
     # loss in the loss variable and gradients in the grads dictionary. Compute #
@@ -258,9 +290,31 @@ class FullyConnectedNet(object):
     # automated tests, make sure that your L2 regularization includes a factor #
     # of 0.5 to simplify the expression for the gradient.                      #
     ############################################################################
-    pass
+    
+    w = 'W' + str(self.num_layers)
+    b = 'b' + str(self.num_layers)
+    nextdout,grads[w],grads[b] =  affine_backward(
+      nextdout,
+      cachemap['acache'+str(self.num_layers)])
+    grads[w] += self.reg * self.params[w]
+
+    for i in range(self.num_layers-1, 0, -1):
+      if self.use_dropout:
+        nextdout = dropout_backward(nextdout, cachemap['dcache'+str(i)])
+      nextdout = relu_backward(nextdout, cachemap['rcache'+str(i)])
+      if self.use_batchnorm:
+        gamma = 'gamma' + str(i)
+        beta = 'beta' + str(i)
+        nextdout,grads[gamma],grads[beta] = batchnorm_backward(
+          nextdout,
+          cachemap['bcache'+str(i)])
+      w = 'W' + str(i)
+      b = 'b' + str(i)
+      nextdout,grads[w],grads[b] = affine_backward(
+        nextdout,
+        cachemap['acache'+str(i)])
+      grads[w] += self.reg * self.params[w]
     ############################################################################
     #                             END OF YOUR CODE                             #
     ############################################################################
-
     return loss, grads
