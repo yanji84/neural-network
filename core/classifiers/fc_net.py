@@ -133,41 +133,30 @@ class FullyConnectedNet(object):
     self.dtype = dtype
     self.params = {}
 
-    ############################################################################
-    # TODO: Initialize the parameters of the network, storing all values in    #
-    # the self.params dictionary. Store weights and biases for the first layer #
-    # in W1 and b1; for the second layer use W2 and b2, etc. Weights should be #
-    # initialized from a normal distribution with standard deviation equal to  #
-    # weight_scale and biases should be initialized to zero.                   #
-    #                                                                          #
-    # When using batch normalization, store scale and shift parameters for the #
-    # first layer in gamma1 and beta1; for the second layer use gamma2 and     #
-    # beta2, etc. Scale parameters should be initialized to one and shift      #
-    # parameters should be initialized to zero.                                #
-    ############################################################################
-
     # first hidden layer
     self.params['W1'] = np.random.normal(
       0,
       weight_scale,
       (input_dim,hidden_dims[0]))
     self.params['b1'] = np.zeros(hidden_dims[0])
-    self.params['gamma1'] = np.ones(hidden_dims[0])
-    self.params['beta1'] = np.zeros(hidden_dims[0])
+    if self.use_batchnorm:
+      self.params['gamma1'] = np.ones(hidden_dims[0])
+      self.params['beta1'] = np.zeros(hidden_dims[0])
 
     # remaining hidden layers
     for i in range(2, len(hidden_dims) + 1):
       wname = 'W' + str(i)
       bname = 'b' + str(i)
-      gname = 'gamma' + str(i)
-      bename = 'beta' + str(i)
       self.params[wname] = np.random.normal(
         0,
         weight_scale,
         (hidden_dims[i - 2], hidden_dims[i - 1]))
       self.params[bname] = np.zeros(hidden_dims[i - 1])
-      self.params[gname] = np.ones(hidden_dims[i - 1])
-      self.params[bename] = np.zeros(hidden_dims[i - 1])
+      if self.use_batchnorm:
+        gname = 'gamma' + str(i)
+        bename = 'beta' + str(i)
+        self.params[gname] = np.ones(hidden_dims[i - 1])
+        self.params[bename] = np.zeros(hidden_dims[i - 1])
 
     # remaining layers
     wname = 'W' + str(len(hidden_dims) + 1)
@@ -177,10 +166,6 @@ class FullyConnectedNet(object):
       weight_scale,
       (hidden_dims[len(hidden_dims) - 1],num_classes))
     self.params[bname] = np.zeros(num_classes)
-
-    ############################################################################
-    #                             END OF YOUR CODE                             #
-    ############################################################################
 
     # When using dropout we need to pass a dropout_param dictionary to each
     # dropout layer so that the layer knows the dropout probability and the mode
@@ -223,18 +208,6 @@ class FullyConnectedNet(object):
         bn_param[mode] = mode
 
     scores = None
-    ############################################################################
-    # TODO: Implement the forward pass for the fully-connected net, computing  #
-    # the class scores for X and storing them in the scores variable.          #
-    #                                                                          #
-    # When using dropout, you'll need to pass self.dropout_param to each       #
-    # dropout forward pass.                                                    #
-    #                                                                          #
-    # When using batch normalization, you'll need to pass self.bn_params[0] to #
-    # the forward pass for the first batch normalization layer, pass           #
-    # self.bn_params[1] to the forward pass for the second batch normalization #
-    # layer, etc.                                                              #
-    ############################################################################
     
     cachemap = {}
     regloss = 0
@@ -266,10 +239,6 @@ class FullyConnectedNet(object):
       self.params['b'+str(self.num_layers)])
     regloss += 0.5*self.reg * np.sum(self.params['W'+str(self.num_layers)]**2)
 
-    ############################################################################
-    #                             END OF YOUR CODE                             #
-    ############################################################################
-
     # If test mode return early
     if mode == 'test':
       return scores
@@ -277,19 +246,6 @@ class FullyConnectedNet(object):
     grads = {}
     loss, nextdout = softmax_loss(scores, y)
     loss += regloss
-    ############################################################################
-    # TODO: Implement the backward pass for the fully-connected net. Store the #
-    # loss in the loss variable and gradients in the grads dictionary. Compute #
-    # data loss using softmax, and make sure that grads[k] holds the gradients #
-    # for self.params[k]. Don't forget to add L2 regularization!               #
-    #                                                                          #
-    # When using batch normalization, you don't need to regularize the scale   #
-    # and shift parameters.                                                    #
-    #                                                                          #
-    # NOTE: To ensure that your implementation matches ours and you pass the   #
-    # automated tests, make sure that your L2 regularization includes a factor #
-    # of 0.5 to simplify the expression for the gradient.                      #
-    ############################################################################
     
     w = 'W' + str(self.num_layers)
     b = 'b' + str(self.num_layers)
@@ -314,7 +270,5 @@ class FullyConnectedNet(object):
         nextdout,
         cachemap['acache'+str(i)])
       grads[w] += self.reg * self.params[w]
-    ############################################################################
-    #                             END OF YOUR CODE                             #
-    ############################################################################
+
     return loss, grads

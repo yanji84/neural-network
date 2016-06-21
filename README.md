@@ -1,1 +1,1 @@
-implement modularly designed neural network in python from scratch including experiment with various update rules, drop out and batch normalization
+implement modularly designed neural network in python from scratch including experiment with various update rules (sgd, sgd with momentum, rmsprop, and adam), drop-out regularization and batch normalization
