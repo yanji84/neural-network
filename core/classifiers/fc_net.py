@@ -225,7 +225,7 @@ class FullyConnectedNet(object):
           nextlayerinput,
           self.params['gamma'+str(i)],
           self.params['beta'+str(i)],
-          bn_param[i-1])
+          self.bn_params[i-1])
       nextlayerinput, cachemap['rcache'+str(i)] = relu_forward(nextlayerinput)
       if self.use_dropout:
         nextlayerinput, cachemap['dcache'+str(i)] = dropout_forward(
