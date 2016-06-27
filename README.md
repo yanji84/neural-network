@@ -1,1 +1,3 @@
-implement modularly designed neural network in python from scratch including experiment with various update rules (sgd, sgd with momentum, rmsprop, and adam), drop-out regularization and batch normalization
+Implementation of modularly designed convolutional/fully connected neural network. The network layers include dropout layer and batch normalization layer. Various update rules including sgd with momentum, rmsprop, and adam are compare with the performance of vanila stochastic gradient descent.
+
+My solution to Stanford Convolutional Neural Networks for Visual Recognition class project
